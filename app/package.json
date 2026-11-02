@@ -1,0 +1,16 @@
+{
+  "name": "lambda-web-functions-app",
+  "version": "0.1.0",
+  "description": "Express.js sample app (matrix compute + local fs) shared by Lambda Web Function and ECS Fargate deployments.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

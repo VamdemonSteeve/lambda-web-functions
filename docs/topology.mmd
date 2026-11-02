@@ -1,0 +1,41 @@
+flowchart LR
+    client([Test harness / client])
+
+    subgraph gw[API Gateway · HTTP API]
+        api{{<api-id>.execute-api<br/>us-east-1.amazonaws.com}}
+        rlam["ANY /lambda/&#123;proxy+&#125;<br/>(strip prefix)"]
+        rwfn["ANY /webfn/&#123;proxy+&#125;<br/>(strip prefix)"]
+        recs["ANY /ecs/&#123;proxy+&#125;<br/>(strip prefix)"]
+    end
+
+    subgraph lam[AWS Lambda · Event Function]
+        lambda["lwf-lambda<br/>container image · 2048 MB<br/>Lambda Web Adapter · :8080"]
+    end
+
+    subgraph wfn[AWS Lambda · Web Function &#40;native&#41;]
+        wep[["HomeRegion endpoint<br/><webfn-domain><br/>.lambda-web.us-east-1.on.aws"]]
+        wrev["revision · ZIP from S3<br/>nodejs24.x · Arm64 · 2 vCPU / 2 GB<br/>no adapter · :AWS_LAMBDA_HTTP_ENDPOINT"]
+        ws3[("S3 · versioned<br/>app-latest.zip")]
+    end
+
+    subgraph far[ECS Fargate]
+        alb[["Application Load Balancer<br/>internet-facing · :80"]]
+        tg["Target group<br/>health: /health"]
+        svc["ECS service lwf-service<br/>1 vCPU / 2048 MB"]
+        t1["task · :8080"]
+    end
+
+    client -->|HTTPS| api
+    api --> rlam
+    api --> rwfn
+    api --> recs
+    rlam -->|AWS_PROXY| lambda
+    rwfn -->|HTTP_PROXY · HTTPS| wep
+    recs -->|HTTP_PROXY| alb
+    wep --> wrev
+    wrev -.->|code pulled by<br/>lambda.amazonaws.com| ws3
+    alb --> tg --> svc
+    svc --> t1
+
+    classDef aws fill:#1b2a4a,stroke:#4a90d9,color:#fff;
+    class lambda,alb,tg,svc,t1,api,rlam,recs,rwfn,wep,wrev,ws3 aws;
